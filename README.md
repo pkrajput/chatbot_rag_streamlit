@@ -1,13 +1,13 @@
 # 🤖 Local RAG Chatbot with Streamlit & Ollama
 
-Welcome to the **Local RAG (Retrieval-Augmented Generation) Chatbot**! This project allows you to chat with your own documents (PDFs) privately on your local machine. It uses powerful open-source models to find relevant information from your files and answer your questions accurately.
+**Local RAG Chatbot**! This project allows you to chat with your own documents (PDFs) privately on your local machine. It uses open-source models to find relevant information from your files and answer your questions accurately.
 
 ---
 
 ## ✨ Features
 
-*   **完全 Private & Local**: Runs 100% on your machine. No data leaves your computer.
-*   **Document Chat**: Upload PDF files and get answers based *only* on their content.
+*   **Private & Local**: Runs 100% on your machine. No data leaves your computer.
+*   **Document Chat**: Upload PDF files and get answers based on their content.
 *   **Vector Search**: Uses a high-performance vector database (ChromaDB) to find the most relevant text chunks.
 *   **Smart Query Refinement**: The AI rephrases your follow-up questions to understand context from previous messages.
 *   **Interactive UI**: Clean, responsive chat interface built with Streamlit.
@@ -100,9 +100,9 @@ By default, this project uses **`qwen3:8b`**. To use a different model (e.g., `l
     ```yaml
     llm:
       type: "ollama"
-      model: "llama3"  # Change this to your preferred model
+      model: "qwen3:8b"  # Change this to your preferred model
     ```
-3.  Make sure you have pulled that model in Ollama (`ollama pull llama3`).
+3.  Make sure you have pulled that model in Ollama (`ollama pull qwen3:8b`).
 
 ### 2. Changing the Embedding Model
 The default embedding model is **`all-MiniLM-L6-v2`**. It is lightweight and effective. To change it:
@@ -114,12 +114,12 @@ The default embedding model is **`all-MiniLM-L6-v2`**. It is lightweight and eff
     ```
 3.  **Note**: If you change the embedding model, you **must** delete the `chroma_db` folder and re-run `python pdf_processor.py` to re-generate the database.
 
-### 3. Adjusting Retrieval Count (Advanced)
-By default, the bot retrieves the **top 5** most relevant chunks of text to answer your question.
+### 3. Adjusting Retrieval Count
+By default, the bot retrieves the **top 3** most relevant chunks of text to answer your question.
 *   **To change this**: Open `main.py` and look for line ~89:
     ```python
     context_list = ke.get_related_knowledge(
-        refined_query, top_k=5, passback_gpt=False
+        refined_query, top_k=3, passback_gpt=False
     )
     ```
     Change `top_k=5` to any number you prefer (e.g., `top_k=3` for faster, more focused answers, or `top_k=10` for more context).
@@ -139,13 +139,4 @@ By default, the bot retrieves the **top 5** most relevant chunks of text to answ
 
 ---
 
-## ❓ FAQ
 
-**Q: I get a "Model not found" error.**
-A: Make sure you installed Ollama and ran `ollama pull qwen3:8b` (or whichever model is in your config).
-
-**Q: The bot says "I don't know" even though the info is in the PDF.**
-A: Try increasing the `top_k` value in `main.py` to give the model more context, or try rephrasing your question to match the document's wording more closely.
-
-**Q: Can I use this without GPU?**
-A: Yes! Ollama runs surprisingly well on CPU, though a GPU will make it much faster.
