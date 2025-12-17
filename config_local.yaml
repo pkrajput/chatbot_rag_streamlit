@@ -1,0 +1,12 @@
+vector_db:
+  type: "chroma"
+  path: "./chroma_db"
+  embedding_model: "all-MiniLM-L6-v2" # Reverted to a dedicated embedding model
+
+llm:
+  type: "ollama"
+  model: "qwen3:8b" 
+  base_url: "http://localhost:11434"
+
+data:
+  path: "./data"

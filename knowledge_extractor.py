@@ -1,44 +1,55 @@
 import yaml
-import openai
-from index_creator import PineconeIndex
-
+from index_creator import LocalIndex
+from langchain_community.chat_models import ChatOllama
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.messages import HumanMessage, SystemMessage
 
 class KnowledgeExtractor:
     def __init__(self):
-        with open("./vector_db/config.yaml", "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
-            self.index = PineconeIndex().get_index()
-            self.model_name = config["openai"]["embedding"]["model_name"]
-            openai.api_key = config["openai"]["embedding"]["api_key"]
+        with open("config_local.yaml", "r", encoding="utf-8") as f:
+            self.config = yaml.safe_load(f)
+            
+        self.local_index = LocalIndex()
+        self.collection = self.local_index.get_collection()
+        
+        # Switching back to HuggingFaceEmbeddings
+        self.embed_model = HuggingFaceEmbeddings(
+            model_name=self.config["vector_db"]["embedding_model"]
+        )
 
     def get_related_knowledge(self, query, top_k=3, passback_gpt=False):
         if len(query) == 0:
             return [""]
 
-        embeddings = openai.Embedding.create(model=self.model_name, input=[query])
-        res = self.index.query(
-            embeddings["data"][0]["embedding"], top_k=top_k, include_metadata=True
+        # Generate embedding for the query
+        query_embedding = self.embed_model.embed_query(query)
+
+        # Query Chroma using values
+        results = self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k
         )
+        
+        # results['documents'] is a list of lists (batch queries)
+        contexts = results['documents'][0] if results['documents'] else []
 
-        contexts = [x["metadata"]["text"] for x in res["matches"]]
-
-        if passback_gpt == False:
+        if not passback_gpt:
             return contexts
 
-        elif passback_gpt == True:
-            joined_context = "".join(contexts)
-
-            chat_text = [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that provides accurate information given context. You do not use any external info to frame your answer but only the context. Reply without any precurser to text.",
-                },
-                {"role": "user", "content": query},
-                {"role": "assistant", "content": joined_context},
+        else:
+            joined_context = "\n".join(contexts)
+            
+            llm = ChatOllama(
+                model=self.config["llm"]["model"],
+                base_url=self.config["llm"]["base_url"]
+            )
+            
+            messages = [
+                SystemMessage(
+                    content="You are a helpful assistant that provides accurate information given context. You do not use any external info to frame your answer but only the context. Reply without any precurser to text."
+                ),
+                HumanMessage(content=f"Context: {joined_context}\n\nQuery: {query}"),
             ]
 
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo", messages=chat_text
-            )
-
-            return response.choices[0].message.content
+            response = llm.invoke(messages)
+            return response.content
