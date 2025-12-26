@@ -5,7 +5,6 @@ langchain-huggingface
 sentence-transformers
 ollama
 pypdf
-textract
 streamlit
 streamlit-chat
 pyyaml
